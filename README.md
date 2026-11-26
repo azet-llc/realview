@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/realview.gif" width="720" alt="Left: the real dashcam. Right: RealView's output, generated from vision-encoder features only, on a drive the model never trained on."></p>
+<p align="center"><img src="assets/realview.gif" width="720" alt="Three panels on a held-out drive: the camera, RealView painting the same road from encoder features only, and RealView fed the features of a night drive."></p>
 
 <h1 align="center">RealView</h1>
 
@@ -12,10 +12,9 @@
 <a href="https://azet.io/products/realview">azet.io/products/realview</a>
 </p>
 
-The right half of the video above never sees the camera. The generator receives one thing, the
-feature tokens a frozen vision encoder produced from those frames, plus its own previous output. It
-paints the road back from what the perception stack understood. The ablation below shows the difference:
-give it features from a different drive and it paints that drive's road instead.
+The middle panel never sees the camera. The generator gets the feature tokens a frozen vision encoder
+produced from those frames, plus its own previous output. From that it paints the road back. The right panel is the
+same model fed the features of a night drive, and it paints that night road instead. This is a drive the model never trained on.
 
 The post is public, short and specific ([source](https://x.com/elonmusk/status/2124458557525397780)):
 vision-encoder features → a separate diffusion model that takes the previous generation with added
@@ -52,7 +51,7 @@ python -m realview.run --video a.mp4 --feats shuffle:b.mp4     # show it a diffe
 | "a separate ~1B diffusion model" | A 33M-parameter diffusion transformer (12 blocks, width 384). Same shape, 30× smaller, laptop budget |
 | "conditional mean-flow model" | Mean-flow objective ([Geng et al. 2025](https://arxiv.org/abs/2505.13447)), one network evaluation per chunk |
 | "takes in the previous reality-view generation with added noise and then denoises it" | The flow's source is the previous chunk plus Gaussian noise (σ = 0.7), not pure noise. One step from t = 1 to 0 |
-| "8 images at 36 fps" per UVE frame at 18 Hz | 8 frames at 20 fps from 4 encoder frames at 10 Hz. Same 2:1 ratio, rescaled to the comma camera's 20 fps |
+| "8 images at 36 fps" per UVE frame at 18 Hz | 8 frames at 20 fps from 4 encoder frames at 10 Hz. Same 2:1 ratio, rescaled to the comma camera's 20 fps. Our chunks follow one another without overlap; the post emits a chunk every encoder frame |
 | "the resolution of the UI screen" | 256×192 RGB through the TAESD autoencoder (4×24×32 latents) |
 | "~pixel-perfect world model … for synthetic data", the 3B driving model | Out of scope. This repo is only the in-car visualization path |
 
@@ -68,18 +67,51 @@ Three things the post does not say, which we had to decide:
 
 ## Numbers
 
-[NUMBERS]
+All numbers come from the released `weights/realview.pt` (step 10,000, EMA). They were measured on the two drives held out of
+training: 5 daytime clips and 3 night clips, 59.6 s each, run autoregressively from a blank start with one network pass per chunk.
+Reproduce them with `scripts/eval_rollout.py` and `scripts/val.py`.
+
+**Does it follow the road it is shown?** For every generated 0.4 s chunk, we look for the nearest real chunk of the same
+clip (16×12 thumbnails) and check that it falls within 0.4 s of the right moment.
+
+| Generator input | Tracks the real moment | PSNR vs. camera |
+|---|---|---|
+| Features of this drive | **63.8%** (day 86.2%, night 26.4%) | **24.1 dB** |
+| Features of a different drive | 1.3% | 18.0 dB |
+| Features set to zero | 1.7% | 16.6 dB |
+| Chance | 2.0% | |
+| Average frame of the clip (needs the whole future) | | 23.7 dB |
+| TAESD round trip (the ceiling at this resolution, on the clips we checked) | | 32.5–34.3 dB |
+
+**One step, held-out chunks.** Mean squared error in normalized latent space over 256 random held-out chunks.
+
+| | MSE |
+|---|---|
+| RealView, previous chunk from the camera + features | **0.477** |
+| Copy the previous chunk | 0.541 |
+| RealView with features zeroed | 0.676 |
+| RealView, cold start (features only) | 0.745 |
+| Predict the dataset mean | 0.985 |
+
+A two-layer MLP probe trained to regress latents from the same features reaches 0.484 on the held-out frames (`scripts/probe.py`).
+That is the sharpest MSE number here because MSE rewards a blurry average. A sampler pays for drawing one specific scene instead.
+
+**Speed.** 92.6 ms for one 8-frame chunk on an M4 Max, encoder, generator and decoder included, measured while
+training shared the GPU. That is 86 fps of output against a 20 fps camera. **Training.** 10,000 steps of batch 16 in 1 h 46 min on the same laptop.
+
+We chose the checkpoint and the noise level (σ = 0.7) while looking at these same held-out drives. A third,
+untouched set of drives would be a cleaner test.
 
 ## Train your own
 
-Data: the 64 one-minute clips of comma2k19's compression challenge (MIT, 21 drives, 76,799 frames).
+Data: the 64 one-minute clips of comma2k19's compression challenge (MIT, 21 drives, 76,778 frames).
 We held out two whole drives, one by day and one at night, and trained on the other 19.
 
 ```sh
 # 1. data (2.4 GB)
 curl -L -o test_videos.zip "https://huggingface.co/datasets/commaai/comma2k19/resolve/main/compression_challenge/test_videos.zip"
 unzip -q test_videos.zip -d videos
-# 2. encoder tokens + VAE latents for every frame (about 11 min on an M4 Max)
+# 2. encoder tokens + VAE latents for every frame (12 min on an M4 Max)
 python scripts/prep.py --videos videos --out data/prep --weights weights
 # 3. train (resumes from runs/base/last.pt)
 python scripts/train.py --data data/prep --out runs/base --steps 40000 \
@@ -95,14 +127,16 @@ Fused attention on Apple's MPS backend has no forward-mode autodiff, and mean-fl
 
 - One car, one camera, one dongle, Bay Area highways in 2018. Expect worse on city streets and other cameras.
 - 256×192. Small text, lane paint at distance and far cars smear.
-- The model invents detail, exactly the failure the Tesla engineers warn about: a car that is not there, a
-  sign that changes. Nothing here is fit for any driving decision.
+- It drops and invents detail. Cars ahead often vanish or smear, and signs turn into colored blobs. A widely shared
+  summary of Tesla engineers' comments names this as the hard part of shipping it. Nothing here is fit for any driving decision.
+- Night is much weaker than day (26% vs. 86% tracking). Most of the training drives are in daylight.
 - 33M parameters on one laptop for hours, against Tesla's ~1B on a fleet. Treat it as a faithful small-scale
   reproduction of the architecture, not of the product.
 
 ## Credits and license
 
 Code: Apache-2.0, © 2026 AZET LLC. Released weights: Apache-2.0, trained only on comma2k19 (MIT, © comma.ai).
+The release's `sample_day.mp4` and the demo footage are held-out comma2k19 clips, MIT, © comma.ai.
 DINOv2 (Apache-2.0, Meta) is downloaded from Hugging Face at runtime.
 `third_party/taesd.py` and the TAESD weights are MIT, © Ollin Boer Bohan. The mean-flow objective follows Geng, Deng, Bai,
 Kolter and He, *Mean Flows for One-step Generative Modeling* (2025).

@@ -45,7 +45,7 @@ def main():
     ap.add_argument("--other", required=True)
     ap.add_argument("--out", default="assets/realview")
     ap.add_argument("--seconds", type=float, default=60)
-    ap.add_argument("--gif-seconds", type=float, default=12)
+    ap.add_argument("--gif-seconds", type=float, default=8)
     ap.add_argument("--gif-skip", type=float, default=4, help="skip the cold start in the GIF")
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     a = ap.parse_args()
@@ -68,7 +68,7 @@ def main():
     tmp = a.out + ".tmp.mp4"
     write_mp4(tmp, clip)
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", tmp, "-vf",
-                    "fps=15,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
+                    "fps=12,split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
                     a.out + ".gif"], check=True)
     os.replace(tmp, a.out + ".clip.mp4")
     print(a.out + ".mp4", a.out + ".gif")
