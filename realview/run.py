@@ -24,6 +24,12 @@ F, STRIDE = 8, 2
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def default_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    return "mps" if torch.backends.mps.is_available() else "cpu"
+
+
 def read_video(path, seconds=None):
     """Center-crop to 4:3, resize to 256x192, resample to 20 fps."""
     out, next_t = [], 0.0
@@ -78,6 +84,8 @@ def rollout(model, feats, mean, std, sigma, dev, steps=1, seed=0):
         outs.append(prev[0] * std + mean)
     if dev == "mps":
         torch.mps.synchronize()
+    elif dev == "cuda":
+        torch.cuda.synchronize()
     return torch.cat(outs), (time.time() - t0) / n
 
 
@@ -103,7 +111,7 @@ def main():
     ap.add_argument("--steps", type=int, default=1)
     ap.add_argument("--sigma", type=float, default=None, help="noise on the previous chunk (default: training value)")
     ap.add_argument("--feats", default="real", help="real | zero | shuffle:<other video>")
-    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
+    ap.add_argument("--device", default=default_device())
     a = ap.parse_args()
     dev = a.device
 

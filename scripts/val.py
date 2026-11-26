@@ -12,7 +12,7 @@ import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from realview.meanflow import generate, make_source  # noqa: E402
-from realview.run import load_model  # noqa: E402
+from realview.run import default_device, load_model  # noqa: E402
 
 F, STRIDE = 8, 2
 
@@ -22,7 +22,7 @@ def main():
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--data", default="data/prep")
     ap.add_argument("--n", type=int, default=256)
-    ap.add_argument("--device", default="mps")
+    ap.add_argument("--device", default=default_device())
     a = ap.parse_args()
     s = torch.load(a.ckpt, map_location="cpu")
     model, mean, std, sigma = load_model(a.ckpt, a.device)

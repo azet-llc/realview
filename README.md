@@ -34,7 +34,8 @@ python -m realview.run --video weights/sample_day.mp4 --out out.mp4
 
 `out.mp4` is the camera on the left and RealView on the right. The sample is a drive the model never trained on.
 Swap in your own forward-facing dashcam clip.
-It is center-cropped to 4:3, resized to 256×192 and resampled to 20 fps. Runs on Apple Silicon (MPS), CUDA or CPU.
+It is center-cropped to 4:3, resized to 256×192 and resampled to 20 fps. The device is picked automatically
+(CUDA, then Apple MPS, then CPU). We tested MPS and CPU: the 60 s sample takes 5 min 15 s end to end on the M4 Max CPU. CUDA is untested.
 The ablations are one flag each:
 
 ```sh
@@ -60,7 +61,7 @@ Three things the post does not say, which we had to decide:
 - **Drift.** A model that feeds on its own output wanders off. During training, a quarter of the batches
   replace the "previous chunk" with the model's own generation, and 30% start from nothing at all. That
   second part forces the scene to come from the features.
-- **Spatial grounding.** In-context tokens alone were not enough. In our first run the model ignored the
+- **Spatial grounding.** In-context tokens alone were not enough. In an early run the model ignored the
   features and copied its previous output. Adding each encoder token onto the patch at the same image position fixed it.
 - **Time embedding.** Mean-flow differentiates the network with respect to t. The usual DiT `t × 1000`
   sinusoid makes that derivative explode (our first run diverged at step 2,000). We embed t unscaled.
@@ -77,7 +78,7 @@ clip (16×12 thumbnails) and check that it falls within 0.4 s of the right momen
 | Generator input | Tracks the real moment | PSNR vs. camera |
 |---|---|---|
 | Features of this drive | **63.8%** (day 86.2%, night 26.4%) | **24.1 dB** |
-| Features of a different drive | 1.3% | 18.0 dB |
+| Features of a different drive | 1.5% | 14.9 dB |
 | Features set to zero | 1.7% | 16.6 dB |
 | Chance | 2.0% | |
 | Average frame of the clip (needs the whole future) | | 23.7 dB |
@@ -127,9 +128,9 @@ Fused attention on Apple's MPS backend has no forward-mode autodiff, and mean-fl
 
 - One car, one camera, one dongle, Bay Area highways in 2018. Expect worse on city streets and other cameras.
 - 256×192. Small text, lane paint at distance and far cars smear.
-- It drops and invents detail. Cars ahead often vanish or smear, and signs turn into colored blobs. A widely shared
-  summary of Tesla engineers' comments names this as the hard part of shipping it. Nothing here is fit for any driving decision.
-- Night is much weaker than day (26% vs. 86% tracking). Most of the training drives are in daylight.
+- It drops and invents detail. Cars ahead often vanish or smear, and signs turn into colored blobs. A [summary of Tesla engineers'
+  comments](https://x.com/Lidayou373514/status/2125780706513375399) names this as the hard part of shipping it. Nothing here is fit for any driving decision.
+- Night is much weaker than day (26% vs. 86% tracking). 15 of the 19 training drives start between 06:00 and 17:00.
 - 33M parameters on one laptop for hours, against Tesla's ~1B on a fleet. Treat it as a faithful small-scale
   reproduction of the architecture, not of the product.
 

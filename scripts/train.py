@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from realview.run import default_device  # noqa: E402
 from realview.meanflow import generate, loss_fn, make_source  # noqa: E402
 from realview.model import RealView  # noqa: E402
 
@@ -56,7 +57,7 @@ def main():
     ap.add_argument("--holdout", default="", help="comma-separated clip-name substrings kept out of training")
     ap.add_argument("--d", type=int, default=384)
     ap.add_argument("--depth", type=int, default=12)
-    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
+    ap.add_argument("--device", default=default_device())
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     dev = a.device

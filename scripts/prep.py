@@ -13,6 +13,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from realview.run import default_device  # noqa: E402
 from realview.encoders import H, W, Latents, VisionEncoder  # noqa: E402
 
 
@@ -27,7 +28,7 @@ def main():
     ap.add_argument("--videos", required=True)
     ap.add_argument("--out", default="data/prep")
     ap.add_argument("--weights", default="weights")
-    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
+    ap.add_argument("--device", default=default_device())
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     enc = VisionEncoder().to(a.device)

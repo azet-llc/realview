@@ -13,6 +13,7 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from realview.run import default_device  # noqa: E402
 from realview.encoders import Latents, VisionEncoder  # noqa: E402
 from realview.run import FPS, batched, load_model, read_video, rollout, write_mp4  # noqa: E402
 
@@ -47,7 +48,7 @@ def main():
     ap.add_argument("--seconds", type=float, default=60)
     ap.add_argument("--gif-seconds", type=float, default=8)
     ap.add_argument("--gif-skip", type=float, default=4, help="skip the cold start in the GIF")
-    ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
+    ap.add_argument("--device", default=default_device())
     a = ap.parse_args()
     dev = a.device
     model, mean, std, sigma = load_model(a.ckpt, dev)
