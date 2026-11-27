@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" width="960" height="300" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="300" rx="14" fill="#ffffff"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
+  </defs>
+  <g font-size="14" fill="#0f172a">
+    <!-- camera -->
+    <rect x="24" y="96" width="132" height="76" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="90" y="128" text-anchor="middle" font-weight="700">Camera</text>
+    <text x="90" y="150" text-anchor="middle" font-size="12" fill="#475569">4 frames @ 10 Hz</text>
+    <!-- encoder -->
+    <rect x="200" y="96" width="160" height="76" rx="10" fill="#e0f2fe" stroke="#7dd3fc"/>
+    <text x="280" y="124" text-anchor="middle" font-weight="700">Vision encoder</text>
+    <text x="280" y="144" text-anchor="middle" font-size="12" fill="#475569">DINOv2-small, frozen</text>
+    <text x="280" y="160" text-anchor="middle" font-size="12" fill="#475569">48 tokens / frame</text>
+    <!-- generator -->
+    <rect x="410" y="80" width="200" height="108" rx="12" fill="#0f172a"/>
+    <text x="510" y="114" text-anchor="middle" font-weight="700" fill="#ffffff">Generator</text>
+    <text x="510" y="136" text-anchor="middle" font-size="12" fill="#cbd5e1">33M diffusion transformer</text>
+    <text x="510" y="154" text-anchor="middle" font-size="12" fill="#cbd5e1">mean-flow, 1 pass</text>
+    <text x="510" y="172" text-anchor="middle" font-size="12" fill="#cbd5e1">per 8-frame chunk</text>
+    <!-- decoder -->
+    <rect x="660" y="96" width="130" height="76" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="725" y="128" text-anchor="middle" font-weight="700">TAESD</text>
+    <text x="725" y="150" text-anchor="middle" font-size="12" fill="#475569">latent → pixels</text>
+    <!-- output -->
+    <rect x="830" y="96" width="110" height="76" rx="10" fill="#dcfce7" stroke="#86efac"/>
+    <text x="885" y="128" text-anchor="middle" font-weight="700">8 frames</text>
+    <text x="885" y="150" text-anchor="middle" font-size="12" fill="#475569">20 fps, 256×192</text>
+    <!-- prev chunk + noise -->
+    <rect x="410" y="226" width="200" height="50" rx="10" fill="#fef9c3" stroke="#fde047"/>
+    <text x="510" y="256" text-anchor="middle" font-size="13">previous chunk + noise (σ 0.7)</text>
+  </g>
+  <g stroke="#475569" stroke-width="2" fill="none">
+    <path d="M156 134H196" marker-end="url(#a)"/>
+    <path d="M360 134H406" marker-end="url(#a)"/>
+    <path d="M610 134H656" marker-end="url(#a)"/>
+    <path d="M790 134H826" marker-end="url(#a)"/>
+    <path d="M510 226V192" marker-end="url(#a)"/>
+    <path d="M633 134V251H614" stroke-dasharray="5 5" marker-end="url(#a)"/>
+  </g>
+  <text x="90" y="200" text-anchor="middle" font-size="12" fill="#b91c1c">the generator never sees this</text>
+  <text x="480" y="40" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a">One encoder tick → one 8-frame chunk</text>
+  <text x="642" y="244" font-size="12" fill="#475569">fed back (latent)</text>
+</svg>

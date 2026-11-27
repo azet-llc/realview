@@ -1,27 +1,47 @@
-<p align="center"><img src="assets/realview.gif" width="720" alt="Three panels on a held-out drive: the camera, RealView painting the same road from encoder features only, and RealView fed the features of a night drive."></p>
+<div align="center">
 
-<h1 align="center">RealView</h1>
+<h1>RealView</h1>
 
-<p align="center"><b>Tesla's in-car Reality View, rebuilt from Elon's post.<br>Open code, open weights, trained on one MacBook in 1 h 46 min.</b></p>
+<h3>Tesla's in-car Reality View, rebuilt from Elon's post.<br>Open code, open weights, trained on one MacBook in 1 h 46 min.</h3>
 
-<p align="center">
+<p>
+<a href="#quickstart"><img alt="Run it in 3 commands" src="https://img.shields.io/badge/Run%20it-3%20commands-0f172a?style=for-the-badge"></a>
+<a href="https://github.com/azet-llc/realview/releases/tag/v0.1.0"><img alt="Download weights" src="https://img.shields.io/badge/Weights-v0.1.0%20%C2%B7%2066%20MB-16a34a?style=for-the-badge"></a>
+</p>
+
+<p>
+<a href="https://azet.io/products/realview"><img alt="Project page" src="https://img.shields.io/badge/Project-azet.io-2563eb"></a>
+<a href="https://x.com/elonmusk/status/2124458557525397780"><img alt="Source post" src="https://img.shields.io/badge/Source-Elon's%20post%2C%20Nov%2022-000000?logo=x"></a>
+<a href="https://arxiv.org/abs/2505.13447"><img alt="Mean Flows paper" src="https://img.shields.io/badge/arXiv-Mean%20Flows-b31b1b?logo=arxiv"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
-<a href="https://github.com/azet-llc/realview/releases/tag/v0.1.0"><img alt="Weights: v0.1.0" src="https://img.shields.io/badge/weights-v0.1.0%20%C2%B7%2066%20MB-green"></a>
 <img alt="Runs on Apple Silicon and CPU" src="https://img.shields.io/badge/runs%20on-Apple%20Silicon%20%C2%B7%20CPU-lightgrey">
-<img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-blue">
+<a href="https://github.com/azet-llc/realview/discussions"><img alt="Discussions" src="https://img.shields.io/badge/Discussions-post%20your%20run-8b5cf6"></a>
 </p>
 
-<p align="center">
-<a href="#quickstart">Quickstart</a> ·
-<a href="#how-it-maps-to-the-post">How it maps to the post</a> ·
-<a href="#numbers">Numbers</a> ·
-<a href="#train-your-own">Train your own</a> ·
-<a href="https://azet.io/products/realview">azet.io/products/realview</a>
-</p>
+<p><b>English</b> | <a href="README.ko.md">한국어</a></p>
+
+<img src="assets/realview.gif" width="860" alt="Three panels on a held-out drive: the camera, RealView painting the same road from encoder features only, and RealView fed the features of a night drive.">
+
+<sub>Left: the camera. Middle: RealView paints the same road from encoder features only. Right: the same model fed a night drive's features. The model never trained on either drive.</sub>
+
+</div>
+
+<br>
 
 | Shown the features of its own drive | Shown another drive's features | Speed on an M4 Max | Model |
 |---|---|---|---|
 | finds the right moment **63.8%** of the time, on drives it never trained on | **1.5%** (chance is 2%) | **86 fps** of output, one network pass per 8 frames | **33M** params, 66 MB |
+
+## News
+
+- **2026-11-27** v0.1.0: code, weights (step 10,000 EMA), a 60 s held-out sample drive and every number below.
+- **2026-11-22** Elon Musk [posts](https://x.com/elonmusk/status/2124458557525397780) how the in-car Reality View is built.
+
+## Contents
+
+[What it is](#what-it-is) · [Quickstart](#quickstart) · [Gallery](#gallery) · [How it maps to the post](#how-it-maps-to-the-post) · [Numbers](#numbers) · [Train your own](#train-your-own) · [Limits](#limits) · [Citation](#citation)
+
+## What it is
 
 The middle panel never sees the camera. The generator gets the feature tokens a frozen vision encoder
 produced from those frames, plus its own previous output. From that it paints the road back. The right panel is the
@@ -57,7 +77,24 @@ python -m realview.run --video a.mp4 --feats shuffle:b.mp4     # show it a diffe
 If it ran for you, a star helps. It tells us people want the next two pieces built in the open:
 multi-camera input and a bird's-eye view target.
 
+## Gallery
+
+Every clip comes from the two drives held out of training. Each GIF shows seconds 4 to 12 of a run that starts from a blank screen, one network pass per 8 frames.
+
+<table>
+<tr>
+<td align="center"><img src="assets/gallery/day.gif" width="420"><br><sub><b>Day highway.</b> Finds the right moment in 100% of this clip's chunks.</sub></td>
+<td align="center"><img src="assets/gallery/curve.gif" width="420"><br><sub><b>Traffic.</b> 65% on this clip. Nearby cars come and go.</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/gallery/night.gif" width="420"><br><sub><b>Night.</b> 46% on this clip, 26% across the night drive. The weak spot.</sub></td>
+<td align="center"><img src="assets/gallery/blind.gif" width="420"><br><sub><b>Features set to zero.</b> Same model, same start, and the road never appears.</sub></td>
+</tr>
+</table>
+
 ## How it maps to the post
+
+<p align="center"><img src="assets/pipeline.svg" width="860" alt="Camera frames go through a frozen DINOv2 encoder; the 33M generator takes those tokens plus the previous chunk with noise and outputs an 8-frame latent chunk, which TAESD decodes. The generator never sees the camera pixels."></p>
 
 | The post | RealView |
 |---|---|
@@ -147,6 +184,18 @@ Fused attention on Apple's MPS backend has no forward-mode autodiff, and mean-fl
 - Night is much weaker than day (26% vs. 86% tracking). 15 of the 19 training drives start between 06:00 and 17:00.
 - 33M parameters on one laptop for hours, against Tesla's ~1B on a fleet. Treat it as a faithful small-scale
   reproduction of the architecture, not of the product.
+
+## Citation
+
+```bibtex
+@software{realview2026,
+  title  = {RealView: an open implementation of the in-car Reality View recipe},
+  author = {{AZET LLC}},
+  year   = {2026},
+  url    = {https://github.com/azet-llc/realview},
+  version = {0.1.0}
+}
+```
 
 ## Credits and license
 
