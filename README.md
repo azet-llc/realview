@@ -43,9 +43,8 @@
 
 ## What it is
 
-The middle panel never sees the camera. The generator gets the feature tokens a frozen vision encoder
-produced from those frames, plus its own previous output. From that it paints the road back. The right panel is the
-same model fed the features of a night drive, and it paints that night road instead. This is a drive the model never trained on.
+The generator never sees the camera. Per frame it gets 48 feature tokens from a frozen vision encoder, plus
+its own previous output, and paints the road from that alone.
 
 The post is public, short and specific ([source](https://x.com/elonmusk/status/2124458557525397780)):
 vision-encoder features → a separate diffusion model that takes the previous generation with added
