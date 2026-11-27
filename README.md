@@ -2,7 +2,14 @@
 
 <h1 align="center">RealView</h1>
 
-<p align="center"><b>On Nov 22, 2026, Elon Musk posted how the in-car Reality View is built.<br>This is that recipe as runnable code. Trained on one MacBook.</b></p>
+<p align="center"><b>Tesla's in-car Reality View, rebuilt from Elon's post.<br>Open code, open weights, trained on one MacBook in 1 h 46 min.</b></p>
+
+<p align="center">
+<a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+<a href="https://github.com/azet-llc/realview/releases/tag/v0.1.0"><img alt="Weights: v0.1.0" src="https://img.shields.io/badge/weights-v0.1.0%20%C2%B7%2066%20MB-green"></a>
+<img alt="Runs on Apple Silicon and CPU" src="https://img.shields.io/badge/runs%20on-Apple%20Silicon%20%C2%B7%20CPU-lightgrey">
+<img alt="Python 3.12" src="https://img.shields.io/badge/python-3.12-blue">
+</p>
 
 <p align="center">
 <a href="#quickstart">Quickstart</a> ·
@@ -11,6 +18,10 @@
 <a href="#train-your-own">Train your own</a> ·
 <a href="https://azet.io/products/realview">azet.io/products/realview</a>
 </p>
+
+| Shown the features of its own drive | Shown another drive's features | Speed on an M4 Max | Model |
+|---|---|---|---|
+| finds the right moment **63.8%** of the time, on drives it never trained on | **1.5%** (chance is 2%) | **86 fps** of output, one network pass per 8 frames | **33M** params, 66 MB |
 
 The middle panel never sees the camera. The generator gets the feature tokens a frozen vision encoder
 produced from those frames, plus its own previous output. From that it paints the road back. The right panel is the
@@ -42,6 +53,9 @@ The ablations are one flag each:
 python -m realview.run --video a.mp4 --feats zero              # blind it
 python -m realview.run --video a.mp4 --feats shuffle:b.mp4     # show it a different drive
 ```
+
+If it ran for you, a star helps. It tells us people want the next two pieces built in the open:
+multi-camera input and a bird's-eye view target.
 
 ## How it maps to the post
 
@@ -142,5 +156,5 @@ DINOv2 (Apache-2.0, Meta) is downloaded from Hugging Face at runtime.
 `third_party/taesd.py` and the TAESD weights are MIT, © Ollin Boer Bohan. The mean-flow objective follows Geng, Deng, Bai,
 Kolter and He, *Mean Flows for One-step Generative Modeling* (2025).
 
-Built at [AZET](https://azet.io). If it helps, a star tells us to keep going: next are multi-camera input and
-a bird's-eye view target.
+Built at [AZET](https://azet.io). Questions and results on your own dashcam footage go in
+[Discussions](https://github.com/azet-llc/realview/discussions).
