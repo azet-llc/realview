@@ -45,11 +45,11 @@ class RealView(nn.Module):
     """z: (B, F, C, H, W) latents; feats: (B, E, T, Df) encoder tokens."""
 
     def __init__(self, frames=8, lat_c=4, lat_h=24, lat_w=32, patch=4,
-                 enc_frames=4, enc_tokens=48, enc_dim=384, d=384, depth=12, heads=6):
+                 enc_frames=4, enc_tokens=48, enc_dim=384, d=384, depth=12, heads=6, act_dim=0):
         super().__init__()
         self.cfg = dict(frames=frames, lat_c=lat_c, lat_h=lat_h, lat_w=lat_w, patch=patch,
                         enc_frames=enc_frames, enc_tokens=enc_tokens, enc_dim=enc_dim,
-                        d=d, depth=depth, heads=heads)
+                        d=d, depth=depth, heads=heads, act_dim=act_dim)
         self.F, self.C, self.H, self.W, self.p, self.d = frames, lat_c, lat_h, lat_w, patch, d
         self.n_sp = (lat_h // patch) * (lat_w // patch)
         self.inp = nn.Linear(lat_c * patch * patch, d)
@@ -60,6 +60,10 @@ class RealView(nn.Module):
         # encoder tokens sit on the same 8x6 grid as the latent patches: add them in place
         self.align = nn.Linear(d, d)
         self.temb = nn.Sequential(nn.Linear(2 * 256, d), nn.SiLU(), nn.Linear(d, d))
+        # world-model mode: a per-chunk control vector (speed, route yaw rate, pose) goes in twice:
+        # into the time embedding, and each frame's slice added onto that frame's tokens
+        self.act = nn.Sequential(nn.Linear(act_dim, d), nn.SiLU(), nn.Linear(d, d)) if act_dim else None
+        self.act_tok = nn.Linear(act_dim // frames, d) if act_dim else None
         self.blocks = nn.ModuleList([Block(d, heads) for _ in range(depth)])
         self.out_n = nn.LayerNorm(d, elementwise_affine=False)
         self.out_ada = nn.Linear(d, 2 * d)
@@ -68,18 +72,22 @@ class RealView(nn.Module):
             nn.init.zeros_(m.weight)
             nn.init.zeros_(m.bias)
 
-    def forward(self, z, r, t, feats):
+    def forward(self, z, r, t, feats, act=None):
         B, F, C, H, W = z.shape
         p = self.p
         x = z.reshape(B, F, C, H // p, p, W // p, p).permute(0, 1, 3, 5, 2, 4, 6)
         x = self.inp(x.reshape(B, F, self.n_sp, C * p * p)) + self.pos[:, None] + self.fpos
         cf = self.cond(feats)
         x = x + self.align(cf).repeat_interleave(F // cf.shape[1], 1)
+        if self.act_tok is not None:  # act is (B, channels * F), channel-major
+            x = x + self.act_tok(act.view(B, -1, F).transpose(1, 2))[:, :, None]
         x = x.reshape(B, F * self.n_sp, self.d)
         c = (cf + self.cpos).reshape(B, -1, self.d)
         n_c = c.shape[1]
         x = torch.cat([c, x], 1)
         e = self.temb(torch.cat([t_embed(t, 256), t_embed(t - r, 256)], -1))
+        if self.act is not None:
+            e = e + self.act(act)
         for blk in self.blocks:
             x = blk(x, e)
         s, b = self.out_ada(e)[:, None].chunk(2, -1)

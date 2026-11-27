@@ -2,4 +2,5 @@ torch>=2.3
 transformers>=4.40
 av>=12
 numpy
-pillow  # scripts/make_demo.py only
+pillow   # scripts/make_demo.py, scripts/make_world_demo.py
+pyarrow  # scripts/prep_world.py only

@@ -6,6 +6,6 @@ authors:
 repository-code: "https://github.com/azet-llc/realview"
 url: "https://azet.io/products/realview"
 license: Apache-2.0
-version: 0.1.0
-date-released: 2026-11-27
-keywords: [diffusion, mean-flow, world-model, autonomous-driving, dinov2]
+version: 0.2.0
+date-released: 2026-11-28
+keywords: [diffusion, mean-flow, world-model, closed-loop-simulation, reinforcement-learning, autonomous-driving, dinov2]
