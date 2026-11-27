@@ -24,7 +24,7 @@
     <!-- policy -->
     <rect x="500" y="84" width="170" height="84" rx="10" fill="#dcfce7" stroke="#86efac"/>
     <text x="585" y="114" text-anchor="middle" font-weight="700">Steering policy</text>
-    <text x="585" y="134" text-anchor="middle" font-size="12" fill="#475569">sees dreamed tokens only</text>
+    <text x="585" y="134" text-anchor="middle" font-size="12" fill="#475569">reads encoder tokens, never the pose</text>
     <text x="585" y="150" text-anchor="middle" font-size="12" fill="#475569">cloned, then RL</text>
     <!-- kinematics -->
     <rect x="500" y="212" width="170" height="84" rx="10" fill="#fef9c3" stroke="#fde047"/>

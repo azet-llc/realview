@@ -36,13 +36,15 @@
 
 **New in v0.2: a world model on top of it.**
 
-| Steered off the recorded path | Policy cloned from human logs | Same policy after RL inside the dream | World model |
+| Steered off the recorded path | Policy cloned from human logs | Same policy after RL inside the dream, no labels | Baseline with hand-written labels, no world model |
 |---|---|---|---|
-| the dream's offset follows the kinematic model at **r = 0.93 to 0.99** | leaves the lane in **75%** of 20 s dreams | **0%**, and back on the path in **100%** | **23M** params, 46 MB, trained in 75 min |
+| the dream's offset follows the kinematic model at **r = 0.93 to 0.99** | leaves the lane in **75%** of 20 s dreams (it learns no correction: the human never left the path) | **0%**, and back on the path in **100%** | 0%, back in 93% |
+
+The world model is 23M parameters, 46 MB, trained in 75 min on the same laptop.
 
 ## News
 
-- **2026-11-28** v0.2.0: a [world model](#world-model) on top of v0.1. Steer the dream off the recorded path, drive a policy inside it, train that policy with RL in the dream. Weights, policies and every number included.
+- **2026-11-28** v0.2.0: a [world model](#world-model) on top of v0.1. Steer the dream off the recorded path, drive a policy inside it, train that policy with RL in the dream. Weights, policies, every number and the baseline that needs no world model.
 - **2026-11-27** v0.1.0: code, weights (step 10,000 EMA), a 60 s held-out sample drive and every number below.
 - **2026-11-22** Elon Musk [posts](https://x.com/elonmusk/status/2124458557525397780) how the in-car Reality View is built.
 
@@ -109,7 +111,7 @@ The bar under each dream is the car's offset from the recorded path, and the tic
 | Used for "closed-loop simulation" | A steering policy reads two dreamed frames every 0.4 s and corrects the route's yaw rate. The kinematic model scores lane keeping |
 | Used for "closed-loop training" (their E2E-WM-RL) | PPO inside the dream, on training drives only. Reward comes from the kinematic state. No labels and no steer-back rule |
 | 12.6M clips, 1 to 7 views, cars and robots | 56 one-minute clips, one camera, one car. No robots |
-| Views the car never drove | The logs never leave the lane. We warp each frame along its ground plane to a simulated off-route trajectory and train on both versions |
+| (Our addition, not from the report) Views the car never drove | The logs never leave the lane. We warp each frame along its ground plane to a simulated off-route trajectory and train on both versions |
 
 > Unofficial. Not affiliated with or endorsed by Xiaomi. No Xiaomi code, data or weights are used.
 
@@ -142,6 +144,7 @@ road the way the recorded route bends. The policy below is therefore handed the 
 
 Every episode starts from a real off-route frame of a held-out drive, 0.3 to 1.0 m beside the recorded path (0.54 m on average),
 and runs for 20 s inside the dream. 105 episodes. The policy is handed the route's yaw rate and reads two dreamed frames to correct it.
+The human in the logs never leaves the path, so the correction a cloned policy learns is zero. It scores like no correction at all, by construction.
 
 | Policy | Left the lane | Back within 0.3 m at 20 s | Its correction on real pixels |
 |---|---|---|---|
@@ -152,7 +155,8 @@ and runs for 20 s inside the dream. 105 episodes. The policy is handed the route
 | The rule itself, reading the true pose | 0% | 100% | |
 
 **Real pixels.** On 2,392 real warped frames of the held-out drives, with no world model in the loop, we correlate each policy's
-correction with the hand-written steer-back rule. The RL policy never saw that rule and never saw a real off-route frame.
+correction with the hand-written steer-back rule. The RL policy never saw that rule, a label, or a frame of the held-out drives. Each of its training episodes
+starts from one real warped frame of a training drive and is dreamed from there.
 It got there from 150 PPO iterations in the dream (up to 107 hours of dreamed driving, about 40 min of laptop time).
 
 Two things this table says that we did not expect:
@@ -167,13 +171,16 @@ Two things this table says that we did not expect:
 ### Three things that did not work first
 
 - **A sampler diverged.** Our first world model was the v0.1 recipe in token space: mean-flow, previous chunk plus noise.
-  Its dreams blew up. Token variance grew about 15% every 0.4 s at any noise level and any number of sampling steps.
-  v0.1 survives because real camera features re-anchor it every chunk, and a dream has no anchor. The released model is a plain regression unrolled over four chunks during training.
+  On the one checkpoint we diagnosed (2,000 steps), token variance grew 15% in the first 0.4 s and faster after that, at every noise level we tried.
+  Four sampling steps roughly halved the growth and did not stop it. Our reading is that v0.1 survives because real camera features
+  re-anchor it every chunk, and a dream has no anchor. We did not train that version longer to find out. The released model is a plain regression unrolled over four chunks.
 - **It ignored the pose.** The pose changes by centimetres per chunk, so copying the previous chunk was almost free and the control went unused
-  (steered-dream r = 0.13). Now half the training samples start from the *other* version of the same moment, recorded or warped,
-  so the pose jumps and the model has to read it. The control is also added onto each frame's tokens, the fix that v0.1 needed for its features.
-- **Vision-only steering failed for the wrong reason.** A policy that had to see the curve and steer it left the lane in most dreams, including one that
-  demonstrably steers back on real pixels. The dream was at fault (see the zeroed-route row). We changed the task after seeing this on the held-out drives.
+  (steered-dream r near 0.1). Now half the training samples start from the *other* version of the same moment, recorded or warped,
+  so the pose jumps and the model has to read it. The control is also added onto each frame's tokens. These changes and the switch to
+  regression went in together. We did not ablate them one by one.
+- **Vision-only steering failed, and we could not tell why.** On an early checkpoint, a policy that had to see the curve and steer it left the lane
+  in most dreams. So did one that steers back on real pixels. The zeroed-route row points at the dream, but we never measured how well those
+  policies follow a curve on real frames, so the two causes are not separated. We changed the task after seeing this on the held-out drives.
 
 ### Run it
 

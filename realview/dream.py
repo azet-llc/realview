@@ -70,6 +70,7 @@ def load_inputs(video, log, start, seconds, enc, dev, speed=30.0, offset=0.0):
     offset: metres left of the recorded path to start from (the warm-up frames are warped to that view)."""
     n = int(seconds * 10) // T * T
     f0 = int(start * FPS)
+    assert f0 >= 2 * WARM, f"--start must be at least {2 * WARM / FPS} s: the models need that much real video first"
     real = read_video(video, start + seconds + 1)[f0 - 2 * WARM:f0 + 2 * n]
     warm = real[:2 * WARM:2]
     warm = batched(enc, warp(warm, torch.full((len(warm),), float(offset)), torch.zeros(len(warm))), dev)
