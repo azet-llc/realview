@@ -156,7 +156,7 @@ The human in the logs never leaves the path, so the correction a cloned policy l
 
 **Real pixels.** On 2,392 real warped frames of the held-out drives, with no world model in the loop, we correlate each policy's
 correction with the hand-written steer-back rule. The RL policy never saw that rule, a label, or a frame of the held-out drives. Each of its training episodes
-starts from one real warped frame of a training drive and is dreamed from there.
+starts from 0.4 s of real warped frames of a training drive and is dreamed from there.
 It got there from 150 PPO iterations in the dream (up to 107 hours of dreamed driving, about 40 min of laptop time).
 
 Two things this table says that we did not expect:
