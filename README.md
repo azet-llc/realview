@@ -15,6 +15,7 @@
 <a href="https://arxiv.org/abs/2505.13447"><img alt="Mean Flows paper" src="https://img.shields.io/badge/arXiv-Mean%20Flows-b31b1b?logo=arxiv"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 <img alt="Runs on Apple Silicon and CPU" src="https://img.shields.io/badge/runs%20on-Apple%20Silicon%20%C2%B7%20CPU-lightgrey">
+<a href="https://x.com/azet_io"><img alt="Follow @azet_io" src="https://img.shields.io/badge/follow-%40azet__io-000000?logo=x"></a>
 <a href="https://github.com/azet-llc/realview/discussions"><img alt="Discussions" src="https://img.shields.io/badge/Discussions-post%20your%20run-8b5cf6"></a>
 </p>
 
